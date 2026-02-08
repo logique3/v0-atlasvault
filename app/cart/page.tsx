@@ -2,56 +2,25 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
+import { useCart } from '@/lib/cart-context';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingCart, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus, Minus, ShoppingCart, MessageCircle, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Mock cart data - replace with actual state management (Zustand/Redux)
-interface CartItemType {
-  id: string;
-  name: string;
-  price: number;
-  category: string;
-  quantity: number;
-  image: string;
-}
-
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState<CartItemType[]>([
-    {
-      id: 'netflix-premium',
-      name: 'Netflix Premium',
-      price: 15.99,
-      category: 'The Vault',
-      quantity: 1,
-      image: '/placeholder.svg?height=100&width=100',
-    },
-  ]);
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+  const { items, total, removeItem, updateQuantity, clearCart } = useCart();
   const [couponCode, setCouponCode] = useState('');
   const [discount, setDiscount] = useState(0);
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = total;
   const discountAmount = (subtotal * discount) / 100;
-  const total = subtotal - discountAmount;
-
-  const updateQuantity = (id: string, newQuantity: number) => {
-    if (newQuantity < 1) {
-      removeFromCart(id);
-      return;
-    }
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
-
-  const removeFromCart = (id: string) => {
-    setCartItems(items => items.filter(item => item.id !== id));
-    toast.success('Item removed from cart');
-  };
+  const finalTotal = subtotal - discountAmount;
 
   const applyCoupon = () => {
     if (couponCode === 'SAVE10') {
@@ -67,7 +36,16 @@ export default function CartPage() {
     }
   };
 
-  if (cartItems.length === 0) {
+  const handleCheckoutWithWhatsApp = () => {
+    if (!isAuthenticated) {
+      toast.error('Please login to proceed');
+      router.push('/login');
+      return;
+    }
+    router.push('/checkout-whatsapp');
+  };
+
+  if (items.length === 0) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
@@ -94,38 +72,27 @@ export default function CartPage() {
             <span>Continue Shopping</span>
           </Link>
           <h1 className="text-4xl font-bold text-foreground">Shopping Cart</h1>
-          <p className="text-muted-foreground mt-2">{cartItems.length} item(s) in cart</p>
+          <p className="text-muted-foreground mt-2">{items.length} item(s) in cart</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2">
             <div className="space-y-4">
-              {cartItems.map((item) => (
+              {items.map((item) => (
                 <Card key={item.id} className="overflow-hidden">
                   <div className="flex flex-col sm:flex-row gap-4 p-4 sm:p-6">
-                    {/* Product Image */}
-                    <Link href={`/product/${item.id}`}>
-                      <div className="bg-muted rounded-lg overflow-hidden flex-shrink-0 h-24 w-24">
-                        <img
-                          src={item.image || "/placeholder.svg"}
-                          alt={item.name}
-                          className="w-full h-full object-cover hover:opacity-80 transition-opacity"
-                        />
-                      </div>
-                    </Link>
-
                     {/* Product Details */}
                     <div className="flex-1 flex flex-col justify-between">
                       <div>
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
                           <div>
-                            <Link href={`/product/${item.id}`}>
+                            <Link href={`/product/${item.slug}`}>
                               <h3 className="font-semibold text-foreground hover:text-primary transition-colors">
                                 {item.name}
                               </h3>
                             </Link>
-                            <p className="text-sm text-muted-foreground">{item.category}</p>
+                            <p className="text-sm text-muted-foreground">Service</p>
                           </div>
                           <p className="text-lg font-bold text-primary">
                             {(item.price * item.quantity).toFixed(2)} TND
@@ -146,7 +113,7 @@ export default function CartPage() {
                             type="number"
                             value={item.quantity}
                             readOnly
-                            className="w-12 text-center border-x border-border outline-none"
+                            className="w-12 text-center border-x border-border outline-none bg-background"
                           />
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
@@ -156,7 +123,10 @@ export default function CartPage() {
                           </button>
                         </div>
                         <button
-                          onClick={() => removeFromCart(item.id)}
+                          onClick={() => {
+                            removeItem(item.id);
+                            toast.success('Item removed from cart');
+                          }}
                           className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -182,14 +152,14 @@ export default function CartPage() {
                     <span>{subtotal.toFixed(2)} TND</span>
                   </div>
                   {discount > 0 && (
-                    <div className="flex justify-between text-success">
+                    <div className="flex justify-between text-green-600">
                       <span>Discount ({discount}%)</span>
                       <span>-{discountAmount.toFixed(2)} TND</span>
                     </div>
                   )}
                   <div className="flex justify-between font-semibold text-foreground text-lg">
                     <span>Total</span>
-                    <span className="text-primary">{total.toFixed(2)} TND</span>
+                    <span className="text-primary">{finalTotal.toFixed(2)} TND</span>
                   </div>
                 </div>
 
@@ -215,10 +185,32 @@ export default function CartPage() {
                   <p className="text-xs text-muted-foreground">Try: SAVE10 or SAVE20</p>
                 </div>
 
+                {/* Auth Check */}
+                {!isAuthenticated && (
+                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                    <p className="text-xs text-blue-700 dark:text-blue-300 text-balance">
+                      Please log in to proceed with checkout
+                    </p>
+                  </div>
+                )}
+
                 {/* Checkout Button */}
-                <Button className="w-full bg-primary hover:bg-primary/90 text-white py-6 text-base font-semibold">
-                  Proceed to Checkout
-                </Button>
+                {isAuthenticated ? (
+                  <Button
+                    onClick={handleCheckoutWithWhatsApp}
+                    className="w-full bg-[#25D366] hover:bg-[#20BA5C] text-white py-6 text-base font-semibold gap-2"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    Checkout with WhatsApp
+                  </Button>
+                ) : (
+                  <Link href="/login" className="w-full">
+                    <Button className="w-full bg-primary hover:bg-primary/90 text-white py-6 text-base font-semibold gap-2">
+                      <LogIn className="w-5 h-5" />
+                      Sign In to Checkout
+                    </Button>
+                  </Link>
+                )}
 
                 {/* Continue Shopping */}
                 <Link href="/products">
@@ -231,7 +223,7 @@ export default function CartPage() {
                 <div className="bg-muted rounded-lg p-3 space-y-2">
                   <p className="text-xs font-medium text-foreground">Secure Checkout</p>
                   <p className="text-xs text-muted-foreground">
-                    Your payment information is encrypted and secure. We accept D17, Flouci, and card payments.
+                    Your order will be securely sent via WhatsApp. Our team will confirm and handle payment.
                   </p>
                 </div>
 

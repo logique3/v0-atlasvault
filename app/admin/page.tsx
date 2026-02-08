@@ -8,6 +8,7 @@ import {
   X, Check, AlertCircle, Calendar, DollarSign, Filter, Download, Eye, EyeOff, Folder
 } from 'lucide-react'
 import Link from 'next/link'
+import { ProtectedRoute } from '@/components/protected-route'
 import { ServicesManagement } from '@/components/admin/services-management'
 import { CategoriesManagement } from '@/components/admin/categories-management'
 import { PromosManagement } from '@/components/admin/promos-management'
@@ -88,7 +89,7 @@ const mockOffers: SpecialOffer[] = [
 ]
 
 // ==================== ADMIN DASHBOARD ====================
-export default function AdminDashboard() {
+function AdminDashboardContent() {
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'categories' | 'promos' | 'offers'>('overview')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
@@ -262,5 +263,13 @@ function KPICard({ title, value, change, icon, trend }: any) {
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+export default function AdminDashboard() {
+  return (
+    <ProtectedRoute requiredRole="admin">
+      <AdminDashboardContent />
+    </ProtectedRoute>
   )
 }

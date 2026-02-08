@@ -8,6 +8,9 @@ import { ProductCard } from '@/components/product-card'
 import { ProductFilters } from '@/components/product-filters'
 import { toast } from 'sonner'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useAuth } from '@/lib/auth-context'
+import { useFavorites } from '@/lib/favorites-context'
+import { useCart } from '@/lib/cart-context'
 
 interface Service {
   id: string
@@ -78,6 +81,9 @@ const categoryData = {
 function ProductsContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { isAuthenticated } = useAuth()
+  const { addFavorite, removeFavorite, isFavorited } = useFavorites()
+  const { addItem } = useCart()
   const [isMounted, setIsMounted] = useState(false)
   
   // Synchronize with search params only after mount
@@ -95,7 +101,6 @@ function ProductsContent() {
   const [sortBy, setSortBy] = useState<'popular' | 'price-low' | 'price-high' | 'rating' | 'newest'>('popular')
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100])
   const [minRating, setMinRating] = useState(0)
-  const [favorites, setFavorites] = useState<Set<string>>(new Set())
 
   // Generate products once per category with consistent ratings based on ID hash
   const categoryServices = useMemo(() => {
@@ -141,21 +146,41 @@ function ProductsContent() {
   }, [categoryServices, sortBy, priceRange, minRating])
 
   const addToCart = (serviceId: string) => {
-    toast.success('Added to cart')
+    const product = filteredAndSortedProducts.find((p) => p.id === serviceId)
+    if (product) {
+      addItem({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        slug: product.slug,
+      })
+      toast.success('Added to cart')
+    }
   }
 
   const toggleFavorite = (serviceId: string) => {
-    setFavorites((prev) => {
-      const newFavorites = new Set(prev)
-      if (newFavorites.has(serviceId)) {
-        newFavorites.delete(serviceId)
-        toast.success('Removed from favorites')
-      } else {
-        newFavorites.add(serviceId)
-        toast.success('Added to favorites')
-      }
-      return newFavorites
-    })
+    if (!isAuthenticated) {
+      toast.error('Please login to add favorites')
+      router.push('/login')
+      return
+    }
+
+    const product = filteredAndSortedProducts.find((p) => p.id === serviceId)
+    if (!product) return
+
+    if (isFavorited(serviceId)) {
+      removeFavorite(serviceId)
+      toast.success('Removed from favorites')
+    } else {
+      addFavorite({
+        id: product.id,
+        slug: product.slug,
+        name: product.name,
+        price: product.price,
+        category: product.category,
+      })
+      toast.success('Added to favorites')
+    }
   }
 
   const handleCategoryChange = (category: string) => {
@@ -257,7 +282,7 @@ function ProductsContent() {
                         reviewCount={product.reviews_count}
                         gradient={currentCategory.gradient}
                         onAddToCart={addToCart}
-                        isFavorited={favorites.has(product.id)}
+                        isFavorited={isFavorited(product.id)}
                         onToggleFavorite={toggleFavorite}
                       />
                     ))}

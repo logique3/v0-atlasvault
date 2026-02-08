@@ -2,8 +2,17 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Menu, X, Search, ShoppingCart, MessageCircle, Home, Moon, Sun } from 'lucide-react';
+import { Menu, X, Search, ShoppingCart, MessageCircle, Home, Moon, Sun, LogOut, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/lib/auth-context';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const categories = [
   { id: 'vault', name: 'The Vault' },
@@ -16,6 +25,7 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
 
   return (
     <>
@@ -58,9 +68,6 @@ export function Header() {
               </div>
               <Link href="/about" className="text-foreground hover:text-primary font-medium transition-colors">
                 About
-              </Link>
-              <Link href="/admin" className="text-foreground hover:text-primary font-medium transition-colors text-xs bg-primary/10 px-3 py-1 rounded-lg">
-                Admin
               </Link>
             </nav>
 
@@ -114,6 +121,75 @@ export function Header() {
               >
                 <MessageCircle className="w-5 h-5 text-[#25D366]" />
               </a>
+
+              {/* User Menu or Auth Buttons */}
+              {isAuthenticated && user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="p-2 hover:bg-muted rounded-lg transition-colors flex items-center gap-2">
+                      <Avatar className="w-6 h-6">
+                        <AvatarFallback className="text-xs bg-primary text-white">
+                          {user.fullName?.split(' ').map(n => n[0]).join('') || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="hidden sm:inline text-sm font-medium text-foreground max-w-20 truncate">
+                        {user.fullName?.split(' ')[0]}
+                      </span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-2 py-1.5 text-sm">
+                      <p className="font-medium text-foreground">{user.fullName}</p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                      {user.role === 'admin' && (
+                        <p className="text-xs font-semibold text-primary mt-1">Admin Account</p>
+                      )}
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard" className="cursor-pointer">
+                        <User className="w-4 h-4 mr-2" />
+                        My Account
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/my-account" className="cursor-pointer">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Account Settings
+                      </Link>
+                    </DropdownMenuItem>
+                    {user.role === 'admin' && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin" className="cursor-pointer">
+                            <Settings className="w-4 h-4 mr-2" />
+                            Admin Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={logout} className="cursor-pointer">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <div className="hidden sm:flex items-center gap-2">
+                  <Link href="/login">
+                    <Button variant="outline" size="sm">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button size="sm" className="bg-primary hover:bg-primary/90 text-white">
+                      Sign Up
+                    </Button>
+                  </Link>
+                </div>
+              )}
 
               {/* Mobile Menu Toggle */}
               <button
@@ -188,6 +264,61 @@ export function Header() {
                 <MessageCircle className="w-4 h-4" />
                 <span className="font-medium">WhatsApp Support</span>
               </a>
+
+              {isAuthenticated && user && (
+                <>
+                  <hr className="my-2 border-border" />
+                  <Link
+                    href="/dashboard"
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-muted rounded-lg transition-colors"
+                  >
+                    <User className="w-4 h-4" />
+                    <span className="font-medium">My Account</span>
+                  </Link>
+                  <Link
+                    href="/my-account"
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-muted rounded-lg transition-colors"
+                  >
+                    <Settings className="w-4 h-4" />
+                    <span className="font-medium">Account Settings</span>
+                  </Link>
+                  {user.role === 'admin' && (
+                    <Link
+                      href="/admin"
+                      className="flex items-center gap-3 px-4 py-2 hover:bg-muted rounded-lg transition-colors text-primary"
+                    >
+                      <Settings className="w-4 h-4" />
+                      <span className="font-medium">Admin Dashboard</span>
+                    </Link>
+                  )}
+                  <button
+                    onClick={logout}
+                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted rounded-lg transition-colors text-destructive"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span className="font-medium">Sign Out</span>
+                  </button>
+                </>
+              )}
+
+              {!isAuthenticated && (
+                <>
+                  <hr className="my-2 border-border" />
+                  <Link
+                    href="/login"
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-muted rounded-lg transition-colors"
+                  >
+                    <User className="w-4 h-4" />
+                    <span className="font-medium">Sign In</span>
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-muted rounded-lg transition-colors text-primary font-medium"
+                  >
+                    <span>Create Account</span>
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
         </div>

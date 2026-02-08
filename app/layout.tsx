@@ -6,6 +6,9 @@ import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { WhatsAppWidget } from '@/components/whatsapp-widget'
 import { CartProvider } from '@/lib/cart-context'
+import { AuthProvider } from '@/lib/auth-context'
+import { FavoritesProvider } from '@/lib/favorites-context'
+import { OrdersProvider } from '@/lib/orders-context'
 import './globals.css'
 
 const _geist = Geist({ subsets: ['latin'] })
@@ -42,12 +45,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans antialiased flex flex-col min-h-screen`}>
-        <CartProvider>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <WhatsAppWidget />
-        </CartProvider>
+        <AuthProvider>
+          <FavoritesProvider>
+            <OrdersProvider>
+              <CartProvider>
+                <Header />
+                <main className="flex-1">{children}</main>
+                <Footer />
+                <WhatsAppWidget />
+              </CartProvider>
+            </OrdersProvider>
+          </FavoritesProvider>
+        </AuthProvider>
         <Analytics />
       </body>
     </html>

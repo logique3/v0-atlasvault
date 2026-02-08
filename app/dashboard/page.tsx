@@ -3,103 +3,40 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useAuth } from '@/lib/auth-context'
+import { ProtectedRoute } from '@/components/protected-route'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { supabase } from '@/lib/supabase'
-import { signOut } from '@/lib/supabase'
 import { ShoppingCart, LogOut, User, Package, History } from 'lucide-react'
 import { toast } from 'sonner'
 
-interface UserProfile {
-  id: string
-  full_name: string
-  email: string
-  phone: string
-}
-
-interface Order {
-  id: string
-  total_amount: number
-  status: string
-  created_at: string
-  payment_method: string
-}
-
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
+  const { user, logout } = useAuth()
+  const [orders, setOrders] = useState<any[]>([])
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { user: authUser } } = await supabase.auth.getUser()
-        
-        if (!authUser) {
-          router.push('/login')
-          return
+    if (user) {
+      const orderKey = `orders_${user.id}`
+      const stored = localStorage.getItem(orderKey)
+      if (stored) {
+        try {
+          setOrders(JSON.parse(stored))
+        } catch {
+          setOrders([])
         }
-
-        setUser(authUser)
-
-        // Fetch profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authUser.id)
-          .single()
-
-        setProfile(profileData || {
-          id: authUser.id,
-          full_name: authUser.user_metadata?.full_name || '',
-          email: authUser.email,
-          phone: authUser.user_metadata?.phone || ''
-        })
-
-        // Fetch orders
-        const { data: ordersData } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('user_id', authUser.id)
-          .order('created_at', { ascending: false })
-
-        setOrders(ordersData || [])
-      } catch (error) {
-        toast.error('Failed to load dashboard')
-      } finally {
-        setLoading(false)
       }
     }
-
-    checkAuth()
-  }, [router])
+  }, [user])
 
   const handleSignOut = async () => {
-    try {
-      await signOut()
-      router.push('/')
-    } catch (error) {
-      toast.error('Failed to sign out')
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading dashboard...</p>
-      </div>
-    )
+    await logout()
+    router.push('/')
   }
 
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-destructive">User not found</p>
-      </div>
-    )
+    return null
   }
 
   return (
@@ -127,7 +64,7 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto px-4 py-12">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome, {profile?.full_name || 'User'}!</h1>
+          <h1 className="text-3xl font-bold mb-2">Welcome, {user.fullName}!</h1>
           <p className="text-muted-foreground">Manage your account and view your orders</p>
         </div>
 
@@ -159,22 +96,24 @@ export default function DashboardPage() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Full Name</label>
-                    <p className="text-lg">{profile?.full_name || 'Not set'}</p>
+                    <p className="text-lg">{user.fullName}</p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Email</label>
-                    <p className="text-lg">{profile?.email}</p>
+                    <p className="text-lg">{user.email}</p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Phone</label>
-                    <p className="text-lg">{profile?.phone || 'Not set'}</p>
+                    <p className="text-lg">{user.phone}</p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Member Since</label>
-                    <p className="text-lg">{new Date(user.created_at).toLocaleDateString()}</p>
+                    <p className="text-lg">{new Date(user.createdAt).toLocaleDateString()}</p>
                   </div>
                 </div>
-                <Button variant="outline">Edit Profile</Button>
+                <Link href="/my-account">
+                  <Button variant="outline">Edit Profile</Button>
+                </Link>
               </CardContent>
             </Card>
           </TabsContent>
@@ -266,5 +205,13 @@ export default function DashboardPage() {
         </Tabs>
       </main>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
   )
 }
