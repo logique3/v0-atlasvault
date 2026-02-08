@@ -196,9 +196,9 @@ export default function HomePage() {
                 Browse Services Now
               </Button>
             </Link>
-            <Link href="/verify-setup">
+            <Link href="/auth-diagnostics">
               <Button size="lg" variant="outline">
-                Verify Setup
+                Auth Diagnostics
               </Button>
             </Link>
             <Link href="/quick-start">

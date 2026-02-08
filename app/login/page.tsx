@@ -188,16 +188,25 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
+        {/* Troubleshooting Links */}
+        <div className="space-y-2 text-xs">
+          <Link href="/auth-diagnostics">
+            <Button variant="outline" size="sm" className="w-full">
+              Having login issues? Run Diagnostics
+            </Button>
+          </Link>
+          <Link href="/quick-start">
+            <Button variant="ghost" size="sm" className="w-full">
+              Quick Start Guide
+            </Button>
+          </Link>
+        </div>
+
         {/* Footer Links */}
         <div className="text-center text-xs text-muted-foreground space-y-1">
           <p>
             <Link href="/" className="hover:text-foreground">
               Back to Home
-            </Link>
-          </p>
-          <p>
-            <Link href="/about" className="hover:text-foreground">
-              About Us
             </Link>
           </p>
         </div>

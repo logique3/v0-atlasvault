@@ -48,38 +48,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true)
+    console.log('[v0] LOGIN: Starting login process')
     try {
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 500))
 
-      // Simple validation
+      // Validation
       if (!email || !password) {
         throw new Error('Email and password are required')
       }
 
-      // Re-initialize if users list is empty (in case localStorage was cleared)
+      const trimmedEmail = email.trim().toLowerCase()
+      const trimmedPassword = password.trim()
+      console.log('[v0] LOGIN: Trimmed credentials - email:', trimmedEmail)
+
+      // Ensure mock data is initialized
+      initializeMockData()
+
+      // Get users from localStorage
       let storedUsers = JSON.parse(localStorage.getItem('atlasVaultUsers') || '[]')
-      if (storedUsers.length === 0) {
-        console.log('[v0] Users list empty, reinitializing mock data')
-        initializeMockData()
-        storedUsers = JSON.parse(localStorage.getItem('atlasVaultUsers') || '[]')
-      }
+      console.log('[v0] LOGIN: Retrieved users count:', storedUsers.length)
+      console.log('[v0] LOGIN: Available user emails:', storedUsers.map((u: any) => u.email))
 
-      // Debug log
-      console.log('[v0] Attempting login with email:', email)
-      console.log('[v0] Available users:', storedUsers.map((u: any) => u.email))
-
-      // Check stored users
-      const foundUser = storedUsers.find(
-        (u: any) => u.email === email && u.password === password
-      )
+      // Find user with case-insensitive email comparison and exact password match
+      const foundUser = storedUsers.find((u: any) => {
+        const userEmail = (u.email || '').trim().toLowerCase()
+        const userPassword = (u.password || '').trim()
+        const emailMatch = userEmail === trimmedEmail
+        const passwordMatch = userPassword === trimmedPassword
+        
+        if (userEmail === trimmedEmail) {
+          console.log('[v0] LOGIN: Email match found for', u.email, '- Password match:', passwordMatch)
+        }
+        
+        return emailMatch && passwordMatch
+      })
 
       if (!foundUser) {
-        console.log('[v0] User not found or password incorrect')
+        console.log('[v0] LOGIN: No matching user found')
         throw new Error('Invalid email or password')
       }
 
-      console.log('[v0] Login successful for user:', email)
+      console.log('[v0] LOGIN: User authenticated:', foundUser.email, 'Role:', foundUser.role)
+      
       const authUser: AuthUser = {
         id: foundUser.id,
         email: foundUser.email,
@@ -91,6 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setUser(authUser)
       localStorage.setItem('atlasVaultUser', JSON.stringify(authUser))
+      console.log('[v0] LOGIN: Session saved, user authenticated')
+    } catch (error: any) {
+      console.log('[v0] LOGIN: Error occurred:', error.message)
+      throw error
     } finally {
       setIsLoading(false)
     }
