@@ -190,10 +190,20 @@ export default function HomePage() {
           <p className="text-muted-foreground mb-8 text-lg">
             Join thousands of satisfied customers. Start shopping today.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
             <Link href="/products">
               <Button size="lg" className="bg-primary hover:bg-primary/90 text-white">
                 Browse Services Now
+              </Button>
+            </Link>
+            <Link href="/quick-start">
+              <Button size="lg" variant="outline">
+                Quick Start
+              </Button>
+            </Link>
+            <Link href="/demo-accounts">
+              <Button size="lg" variant="outline">
+                Demo Accounts
               </Button>
             </Link>
             <Link href="/testing-guide">

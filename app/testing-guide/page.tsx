@@ -22,9 +22,15 @@ export default function TestingGuidePage() {
         {/* Header */}
         <div className="mb-12">
           <h1 className="text-4xl font-bold text-foreground mb-4">AtlasVault - Testing Guide</h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg text-muted-foreground mb-4">
             Welcome to the testing environment. Below you'll find all the mock data and credentials you need to test the platform.
           </p>
+          <Link href="/demo-accounts">
+            <Button className="gap-2">
+              <Users className="w-4 h-4" />
+              View All Demo Accounts
+            </Button>
+          </Link>
         </div>
 
         {/* Quick Stats */}
