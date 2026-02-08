@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
+import { initializeMockData } from '@/lib/mock-data'
+// CardDescription import is for the demo accounts card
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -20,6 +22,11 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
 
+  // Initialize mock data on component mount
+  useEffect(() => {
+    initializeMockData()
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -35,41 +42,7 @@ export default function LoginPage() {
     }
   }
 
-  // Create demo admin account if it doesn't exist
-  const createDemoAdmin = () => {
-    const storedUsers = JSON.parse(localStorage.getItem('atlasVaultUsers') || '[]')
-    if (!storedUsers.some((u: any) => u.email === 'admin@atlas.test')) {
-      storedUsers.push({
-        id: 'admin_demo',
-        email: 'admin@atlas.test',
-        password: 'admin123',
-        fullName: 'Admin User',
-        phone: '+216 99 000 000',
-        role: 'admin',
-        createdAt: new Date().toISOString(),
-      })
-      localStorage.setItem('atlasVaultUsers', JSON.stringify(storedUsers))
-      toast.success('Demo admin account created! Email: admin@atlas.test, Password: admin123')
-    }
-  }
 
-  // Create demo user account if it doesn't exist
-  const createDemoUser = () => {
-    const storedUsers = JSON.parse(localStorage.getItem('atlasVaultUsers') || '[]')
-    if (!storedUsers.some((u: any) => u.email === 'user@atlas.test')) {
-      storedUsers.push({
-        id: 'user_demo',
-        email: 'user@atlas.test',
-        password: 'user123',
-        fullName: 'John Doe',
-        phone: '+216 95 123 456',
-        role: 'user',
-        createdAt: new Date().toISOString(),
-      })
-      localStorage.setItem('atlasVaultUsers', JSON.stringify(storedUsers))
-      toast.success('Demo user account created! Email: user@atlas.test, Password: user123')
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center px-4 py-12">
@@ -189,29 +162,29 @@ export default function LoginPage() {
         </Card>
 
         {/* Demo Accounts */}
-        <Card className="bg-muted/50 border-muted">
+        <Card className="bg-primary/5 border-primary/20">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Demo Accounts</CardTitle>
+            <CardTitle className="text-sm">Try Demo Accounts</CardTitle>
+            <CardDescription className="text-xs">Use these credentials to test the platform:</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={createDemoAdmin}
-              className="w-full justify-center text-xs"
-            >
-              Create Demo Admin
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={createDemoUser}
-              className="w-full justify-center text-xs"
-            >
-              Create Demo User
-            </Button>
+          <CardContent className="space-y-3">
+            <div className="space-y-2 text-xs">
+              <div className="p-2 bg-card rounded border border-border">
+                <p className="font-mono font-semibold">Admin</p>
+                <p className="font-mono text-muted-foreground">admin@atlasvault.com</p>
+                <p className="font-mono text-muted-foreground">admin123</p>
+              </div>
+              <div className="p-2 bg-card rounded border border-border">
+                <p className="font-mono font-semibold">User</p>
+                <p className="font-mono text-muted-foreground">john@example.com</p>
+                <p className="font-mono text-muted-foreground">password123</p>
+              </div>
+            </div>
+            <Link href="/demo-accounts" className="block">
+              <Button variant="outline" size="sm" className="w-full justify-center text-xs">
+                View All Demo Accounts
+              </Button>
+            </Link>
           </CardContent>
         </Card>
 

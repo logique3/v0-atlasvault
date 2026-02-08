@@ -57,16 +57,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Email and password are required')
       }
 
+      // Re-initialize if users list is empty (in case localStorage was cleared)
+      let storedUsers = JSON.parse(localStorage.getItem('atlasVaultUsers') || '[]')
+      if (storedUsers.length === 0) {
+        console.log('[v0] Users list empty, reinitializing mock data')
+        initializeMockData()
+        storedUsers = JSON.parse(localStorage.getItem('atlasVaultUsers') || '[]')
+      }
+
+      // Debug log
+      console.log('[v0] Attempting login with email:', email)
+      console.log('[v0] Available users:', storedUsers.map((u: any) => u.email))
+
       // Check stored users
-      const storedUsers = JSON.parse(localStorage.getItem('atlasVaultUsers') || '[]')
       const foundUser = storedUsers.find(
         (u: any) => u.email === email && u.password === password
       )
 
       if (!foundUser) {
+        console.log('[v0] User not found or password incorrect')
         throw new Error('Invalid email or password')
       }
 
+      console.log('[v0] Login successful for user:', email)
       const authUser: AuthUser = {
         id: foundUser.id,
         email: foundUser.email,

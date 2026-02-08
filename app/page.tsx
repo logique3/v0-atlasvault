@@ -196,6 +196,11 @@ export default function HomePage() {
                 Browse Services Now
               </Button>
             </Link>
+            <Link href="/verify-setup">
+              <Button size="lg" variant="outline">
+                Verify Setup
+              </Button>
+            </Link>
             <Link href="/quick-start">
               <Button size="lg" variant="outline">
                 Quick Start
@@ -204,11 +209,6 @@ export default function HomePage() {
             <Link href="/demo-accounts">
               <Button size="lg" variant="outline">
                 Demo Accounts
-              </Button>
-            </Link>
-            <Link href="/testing-guide">
-              <Button size="lg" variant="outline">
-                Testing Guide
               </Button>
             </Link>
           </div>
