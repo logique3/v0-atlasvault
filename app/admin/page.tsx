@@ -13,6 +13,9 @@ import { ServicesManagement } from '@/components/admin/services-management'
 import { CategoriesManagement } from '@/components/admin/categories-management'
 import { PromosManagement } from '@/components/admin/promos-management'
 import { OffersManagement } from '@/components/admin/offers-management'
+import { UsersManagement } from '@/components/admin/users-management'
+import { OrdersManagement } from '@/components/admin/orders-management'
+import { getMockStatistics } from '@/lib/mock-data'
 
 // ==================== INTERFACES ====================
 interface Product {
@@ -90,7 +93,7 @@ const mockOffers: SpecialOffer[] = [
 
 // ==================== ADMIN DASHBOARD ====================
 function AdminDashboardContent() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'categories' | 'promos' | 'offers'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'categories' | 'promos' | 'offers' | 'users' | 'orders'>('overview')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
   const [showProductModal, setShowProductModal] = useState(false)
@@ -98,6 +101,7 @@ function AdminDashboardContent() {
   const [showPromoModal, setShowPromoModal] = useState(false)
   const [showOfferModal, setShowOfferModal] = useState(false)
   const [editingItem, setEditingItem] = useState<any>(null)
+  const stats = getMockStatistics()
 
   // ==================== OVERVIEW TAB ====================
   const renderOverview = () => (
@@ -105,31 +109,31 @@ function AdminDashboardContent() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="Total Revenue"
-          value="12,450 TND"
-          change="+12.5%"
+          value={`${stats.totalRevenue.toFixed(2)} TND`}
+          change={`${stats.completedOrders} completed`}
           icon={<DollarSign className="w-6 h-6" />}
           trend="up"
         />
         <KPICard
-          title="Active Products"
-          value="24"
-          change="+3"
+          title="Total Users"
+          value={stats.totalUsers}
+          change={`${stats.adminUsers} admins, ${stats.regularUsers} users`}
+          icon={<Users className="w-6 h-6" />}
+          trend="up"
+        />
+        <KPICard
+          title="Total Orders"
+          value={stats.totalOrders}
+          change={`${stats.pendingOrders} pending`}
           icon={<ShoppingCart className="w-6 h-6" />}
           trend="up"
         />
         <KPICard
-          title="Active Promos"
-          value="7"
-          change="+2"
-          icon={<Tag className="w-6 h-6" />}
+          title="Completed Orders"
+          value={stats.completedOrders}
+          change={`${Math.round((stats.completedOrders / stats.totalOrders) * 100 || 0)}% success rate`}
+          icon={<TrendingUp className="w-6 h-6" />}
           trend="up"
-        />
-        <KPICard
-          title="Total Categories"
-          value="4"
-          change="0"
-          icon={<Folder className="w-6 h-6" />}
-          trend="neutral"
         />
       </div>
 
@@ -198,6 +202,16 @@ function AdminDashboardContent() {
     <OffersManagement />
   )
 
+  // ==================== USERS TAB ====================
+  const renderUsers = () => (
+    <UsersManagement />
+  )
+
+  // ==================== ORDERS TAB ====================
+  const renderOrders = () => (
+    <OrdersManagement />
+  )
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -218,7 +232,7 @@ function AdminDashboardContent() {
       {/* Tabs Navigation */}
       <div className="border-b border-border sticky top-28 bg-background/95 backdrop-blur z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-1 overflow-x-auto">
-          {['overview', 'products', 'categories', 'promos', 'offers'].map((tab) => (
+          {['overview', 'users', 'orders', 'products', 'categories', 'promos', 'offers'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab as any)}
@@ -237,6 +251,8 @@ function AdminDashboardContent() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'overview' && renderOverview()}
+        {activeTab === 'users' && renderUsers()}
+        {activeTab === 'orders' && renderOrders()}
         {activeTab === 'products' && renderProducts()}
         {activeTab === 'categories' && renderCategories()}
         {activeTab === 'promos' && renderPromos()}

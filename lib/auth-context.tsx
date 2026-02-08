@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react'
+import { initializeMockData } from './mock-data'
 
 export interface AuthUser {
   id: string
@@ -29,6 +30,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Load user from localStorage on mount
   useEffect(() => {
+    // Initialize mock data on first load
+    initializeMockData()
+
     const storedUser = localStorage.getItem('atlasVaultUser')
     if (storedUser) {
       try {

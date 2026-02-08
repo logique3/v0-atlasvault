@@ -4,31 +4,27 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
+import { useOrders } from '@/lib/orders-context'
 import { ProtectedRoute } from '@/components/protected-route'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ShoppingCart, LogOut, User, Package, History } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { ShoppingCart, LogOut, User, Package, History, TrendingUp, DollarSign } from 'lucide-react'
 import { toast } from 'sonner'
 
 function DashboardContent() {
   const router = useRouter()
   const { user, logout } = useAuth()
-  const [orders, setOrders] = useState<any[]>([])
+  const { getUserOrders } = useOrders()
+  const [userOrders, setUserOrders] = useState<any[]>([])
 
   useEffect(() => {
     if (user) {
-      const orderKey = `orders_${user.id}`
-      const stored = localStorage.getItem(orderKey)
-      if (stored) {
-        try {
-          setOrders(JSON.parse(stored))
-        } catch {
-          setOrders([])
-        }
-      }
+      const orders = getUserOrders(user.id)
+      setUserOrders(orders)
     }
-  }, [user])
+  }, [user, getUserOrders])
 
   const handleSignOut = async () => {
     await logout()
@@ -66,6 +62,47 @@ function DashboardContent() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Welcome, {user.fullName}!</h1>
           <p className="text-muted-foreground">Manage your account and view your orders</p>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Orders</p>
+                  <p className="text-3xl font-bold mt-2">{userOrders.length}</p>
+                </div>
+                <Package className="w-6 h-6 text-muted-foreground opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Completed Orders</p>
+                  <p className="text-3xl font-bold mt-2 text-green-600">
+                    {userOrders.filter((o) => o.status === 'completed').length}
+                  </p>
+                </div>
+                <TrendingUp className="w-6 h-6 text-green-600 opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Spent</p>
+                  <p className="text-3xl font-bold mt-2 text-primary">
+                    {userOrders.reduce((sum, o) => sum + o.totalAmount, 0).toFixed(2)} TND
+                  </p>
+                </div>
+                <DollarSign className="w-6 h-6 text-primary opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Tabs */}
@@ -121,7 +158,7 @@ function DashboardContent() {
           {/* Orders Tab */}
           <TabsContent value="orders">
             <div className="space-y-4">
-              {orders.length === 0 ? (
+              {userOrders.length === 0 ? (
                 <Card>
                   <CardContent className="py-12 text-center">
                     <ShoppingCart className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -132,41 +169,72 @@ function DashboardContent() {
                   </CardContent>
                 </Card>
               ) : (
-                orders.map((order) => (
-                  <Card key={order.id}>
+                userOrders.map((order) => (
+                  <Card key={order.id} className="hover:shadow-md transition-shadow">
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div>
-                          <CardTitle className="text-base">Order #{order.id.slice(0, 8)}</CardTitle>
+                          <CardTitle className="text-base">Order #{order.id}</CardTitle>
                           <CardDescription>
-                            {new Date(order.created_at).toLocaleDateString()}
+                            {new Date(order.createdAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
                           </CardDescription>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          order.status === 'completed' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
-                          order.status === 'processing' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' :
-                          'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
-                        }`}>
-                          {order.status}
-                        </span>
+                        <Badge
+                          className={
+                            order.status === 'completed'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : order.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          }
+                        >
+                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                        </Badge>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-4">
+                        {/* Order Items */}
                         <div>
-                          <p className="text-sm text-muted-foreground">Total Amount</p>
-                          <p className="text-lg font-bold text-primary">{order.total_amount.toFixed(2)} TND</p>
+                          <p className="text-sm font-semibold text-muted-foreground mb-2">Services</p>
+                          <div className="space-y-1">
+                            {order.items.map((item: any, idx: number) => (
+                              <div key={idx} className="flex justify-between text-sm">
+                                <span>{item.serviceName}</span>
+                                <span className="text-muted-foreground">x{item.quantity}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Payment Method</p>
-                          <p className="text-lg font-semibold capitalize">{order.payment_method}</p>
+
+                        {/* Summary */}
+                        <div className="border-t pt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Total Amount</p>
+                            <p className="text-lg font-bold text-primary">{order.totalAmount.toFixed(2)} TND</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Payment Method</p>
+                            <p className="text-sm font-semibold capitalize">{order.paymentMethod}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Status</p>
+                            <Badge variant="outline" className="mt-1">
+                              {order.status}
+                            </Badge>
+                          </div>
                         </div>
+
+                        <Link href={`/order-confirmation/${order.id}`}>
+                          <Button variant="outline" size="sm" className="w-full mt-2">
+                            View Full Details
+                          </Button>
+                        </Link>
                       </div>
-                      <Link href={`/order-confirmation/${order.id}`}>
-                        <Button variant="outline" size="sm" className="mt-4 bg-transparent">
-                          View Details
-                        </Button>
-                      </Link>
                     </CardContent>
                   </Card>
                 ))
@@ -182,21 +250,55 @@ function DashboardContent() {
                 <CardDescription>Your complete transaction history</CardDescription>
               </CardHeader>
               <CardContent>
-                {orders.length === 0 ? (
+                {userOrders.length === 0 ? (
                   <p className="text-muted-foreground text-center py-8">No purchase history yet</p>
                 ) : (
-                  <div className="space-y-2">
-                    {orders.map((order) => (
-                      <div key={order.id} className="flex justify-between py-2 border-b last:border-b-0">
-                        <div>
-                          <p className="font-medium">Order #{order.id.slice(0, 8)}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(order.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <p className="font-bold">{order.total_amount.toFixed(2)} TND</p>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-3 px-4">Order ID</th>
+                          <th className="text-left py-3 px-4">Date</th>
+                          <th className="text-left py-3 px-4">Services</th>
+                          <th className="text-right py-3 px-4">Amount</th>
+                          <th className="text-center py-3 px-4">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {userOrders.map((order) => (
+                          <tr key={order.id} className="border-b hover:bg-muted/50">
+                            <td className="py-3 px-4 font-mono text-xs">{order.id}</td>
+                            <td className="py-3 px-4">
+                              {new Date(order.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="text-xs space-y-1">
+                                {order.items.slice(0, 2).map((item: any, idx: number) => (
+                                  <div key={idx}>{item.serviceName}</div>
+                                ))}
+                                {order.items.length > 2 && (
+                                  <div className="text-muted-foreground">+{order.items.length - 2} more</div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-right font-bold">{order.totalAmount.toFixed(2)} TND</td>
+                            <td className="py-3 px-4 text-center">
+                              <Badge
+                                className={
+                                  order.status === 'completed'
+                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                    : order.status === 'pending'
+                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                }
+                              >
+                                {order.status}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </CardContent>
